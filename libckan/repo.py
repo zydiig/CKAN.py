@@ -1,11 +1,9 @@
 import logging
 
 from libckan import cache
-from settings import get_current_instance
 
 
-def fetch_latest(args):
-    instance = get_current_instance()
+def fetch_latest(instance, args):
     repos = instance.repos
     if not args.repo_name:
         for repo in repos.items():
@@ -14,25 +12,23 @@ def fetch_latest(args):
         cache.fetch_latest_repo(instance, args.name)
 
 
-def add(args):
-    instance = get_current_instance()
+def add(instance, args):
     instance.repos[args.name] = args.uri
     instance.save()
     if not args.add_only:
         cache.fetch_latest_repo(instance, args.name)
+        cache.parse_metadata(instance, args.name)
 
 
-def list_repo(args):
-    instance = get_current_instance()
+def list_repo(instance, _):
     for repo in instance.repos:
         print(repo)
 
 
-def rm(args):
-    ins_settings = get_current_instance()
-    if args.name in ins_settings.repos:
-        del ins_settings.repos[args.name]
-        ins_settings.save()
+def rm(instance, args):
+    if args.name in instance.repos:
+        del instance.repos[args.name]
+        instance.save()
     else:
         logging.error("Repository {} not found.".format(args.name))
 
@@ -47,4 +43,4 @@ actions = {
 
 def entry(args):
     logging.info(args)
-    actions[args.action](args)
+    actions[args.action](args.instance, args)

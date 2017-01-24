@@ -4,10 +4,12 @@ import logging
 import instance
 import search
 from libckan import repo
+from settings import get_current_instance, Instance
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--kspdir", help="KSP directory to operate in.", type=str, nargs="?")
 modules = {"instance": instance, "repo": repo}
 subparsers = parser.add_subparsers(help="Modules to invoke.")
 
@@ -33,4 +35,9 @@ search_parser.set_defaults(func=search.entry)
 
 if __name__ == "__main__":
     args = parser.parse_args()
+    if not args.kspdir:
+        args.instance = get_current_instance()
+    else:
+        args.instance = Instance(args.kspdir)
+    logging.info(args)
     args.func(args)

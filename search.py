@@ -1,30 +1,23 @@
 from pkg_resources import parse_version
 
-import settings
 from libckan.cache import CKANCache
 
 
 def entry(args):
-    instance = settings.get_current_instance()
+    instance = args.instance
     caches = [CKANCache(instance, name) for name, uri in instance.repos.items()]
-    if args.name:
-        def cond(x):
-            if args.name in x["name"]:
-                return True
-            return False
-    elif args.desc:
-        def cond(x):
-            if args.desc in x["abstract"]:
-                return True
-            return False
-    elif args.kspver:
-        def cond(x):
-            if parse_version(args.kspver) == parse_version(x["ksp_version"]):
-                return True
-            return False
 
-    def cond(x):
-        return True
+    cond = lambda _: True
+
+    if args.name:
+        cond = lambda x: args.name in x["name"]
+    elif args.desc:
+        cond = lambda x: args.desc in x["abstract"]
+    elif args.kspver:
+        cond = lambda x: parse_version(args.kspver) == parse_version(x["ksp_version"])
 
     for cache in caches:
-        print(cache.search(cond))
+        for package in cache.search(cond):
+            print("Name: ", package.name)
+            print("Description: ", package.abstract)
+            print("Version: ", package.get_versions())
