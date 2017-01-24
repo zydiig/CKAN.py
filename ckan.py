@@ -33,6 +33,11 @@ search_parser.add_argument("--desc", help="Search for specific string in descrip
 search_parser.add_argument("--kspver", help="Search for mods compatible with a specific version of KSP.")
 search_parser.set_defaults(func=search.entry)
 
+install_parser = subparsers.add_parser('install', help='Install mods.')
+install_parser.add_argument("name", help="Names of mods to install.", nargs="+")
+install_parser.add_argument("--dry-run", help="Simulate installation process.", nargs="?", action="store_true",
+                            dest="dry_run")
+
 if __name__ == "__main__":
     args = parser.parse_args()
     if not args.kspdir:

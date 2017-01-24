@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 class Settings:
-    def __init__(self, path):
+    def __init__(self, path: Path):
         self._path = path
         self._obj = json.load(self._path.open())
 
@@ -25,14 +25,14 @@ class Settings:
 
 
 class Instance(Settings):
-    def __init__(self, kspdir):
+    def __init__(self, kspdir: str):
         self.kspdir = kspdir
         super().__init__(self._get_path(kspdir))
 
     def get_repos_path(self, name):
         return Path(self.kspdir) / "CKAN.py" / "repos" / name
 
-    def create(self, kspdir):
+    def create(self, kspdir: str):
         self.kspdir = kspdir
         self.path = self._get_path(kspdir)
         self._obj = {
@@ -45,7 +45,7 @@ class Instance(Settings):
         self.save()
 
     @staticmethod
-    def _get_path(kspdir):
+    def _get_path(kspdir) -> Path:
         return Path(kspdir) / "CKAN.py" / "settings.json"
 
 
@@ -53,7 +53,7 @@ class GlobalSettings(Settings):
     def __init__(self):
         super().__init__((Path("~") / ".ckanpy.cfg").expanduser())
 
-    def create(self, kspdir):
+    def create(self, kspdir: str):
         self._obj = {
             "instances": [{"name": "Default", "path": kspdir}],
             "current_instance": "Default"

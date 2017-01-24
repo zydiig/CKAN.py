@@ -18,6 +18,8 @@ def entry(args):
 
     for cache in caches:
         for package in cache.search(cond):
-            print("Name: ", package.name)
+            print("")
+            print("Name:        ", package.name)
             print("Description: ", package.abstract)
-            print("Version: ", package.get_versions())
+            print("Version:     ", package.get_versions())
+            print("")

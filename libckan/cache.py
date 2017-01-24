@@ -6,6 +6,8 @@ from urllib.parse import quote_plus
 
 import requests
 
+from .version import version_comp
+
 
 def fetch_latest_repo(instance, name):
     f = (instance.get_repos_path(name) / quote_plus(instance.repos[name])).open("wb")
@@ -42,99 +44,11 @@ class Package:
         self.builds = builds
 
     def get_versions(self):
-        return sorted([CKANVersion(build["version"]) for build in self.builds])
+        return sorted([CKANVersion(build["version"]) for build in self.builds], reverse=True)
 
     def __getattr__(self, item):
         if item in ["abstract"]:
             return max(self.builds, key=lambda x: CKANVersion(x["version"]))[item]
-
-
-# Inspired by https://github.com/KSP-CKAN/CKAN/blob/master/Core/Types/Version.cs#L76
-def str_comp(a, b):
-    ar = ""
-    br = ""
-    for idx, chr in enumerate(a):
-        if chr.isdigit():
-            ar = a[idx:]
-            a = a[:idx - 1]
-            break
-    for idx, chr in enumerate(b):
-        if chr.isdigit():
-            br = b[idx:]
-            b = b[:idx - 1]
-            break
-    ret = 0
-    if len(a) > 0 and len(b) > 0:
-        if a[0] != "." and b[0] == ".":
-            ret = -1
-        elif a[0] == "." and b[0] != ".":
-            ret = 1
-        elif a[0] == "." and b[0] == ".":
-            if len(a) == 1 and len(b) > 1:
-                ret = 1
-            elif len(a) > 1 and len(b) == 1:
-                ret = -1
-            else:
-                if a < b:
-                    ret = -1
-                elif a == b:
-                    ret = 0
-                elif a > b:
-                    ret = 1
-    else:
-        if a < b:
-            ret = -1
-        elif a == b:
-            ret = 0
-        elif a > b:
-            ret = 1
-    return ret, ar, br
-
-
-# This too.
-def num_comp(a, b):
-    ar = ""
-    br = ""
-    for idx, chr in enumerate(a):
-        if not chr.isdigit():
-            ar = a[idx:]
-            a = a[:idx - 1]
-            break
-    for idx, chr in enumerate(b):
-        if not chr.isdigit():
-            br = b[idx:]
-            b = b[:idx - 1]
-            break
-    ret = 0
-    if len(a) == 0:
-        ai = 0
-    else:
-        ai = int(a)
-    if len(b) == 0:
-        bi = 0
-    else:
-        bi = int(b)
-    if ai < bi:
-        ret = -1
-    elif ai == bi:
-        ret = 0
-    elif ai > bi:
-        ret = 1
-    return ret, ar, br
-
-
-def version_comp(a, b):
-    while len(a) != 0 and len(b) != 0:
-        ret, a, b = str_comp(a, b)
-        if ret != 0:
-            return ret
-        ret, a, b = num_comp(a, b)
-        if ret != 0:
-            return ret
-    if len(a) == 0 and len(b) == 0:
-        return 0
-    else:
-        return -1 if len(a) == 0 else 1
 
 
 class CKANVersion:
@@ -150,14 +64,14 @@ class CKANVersion:
     def __lt__(self, other):
         if self.epoch < other.epoch:
             return True
-        if self.version < other.version:
+        if version_comp(self.version, other.version) == -1:
             return True
         return False
 
     def __gt__(self, other):
         if self.epoch > other.epoch:
             return True
-        if self.version > other.version:
+        if version_comp(self.version, other.version) == 1:
             return True
         return False
 
