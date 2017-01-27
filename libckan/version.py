@@ -5,12 +5,12 @@ def _str_comp(a, b):
     for idx, chr in enumerate(a):
         if chr.isdigit():
             ar = a[idx:]
-            a = a[:idx - 1]
+            a = a[:idx]
             break
     for idx, chr in enumerate(b):
         if chr.isdigit():
             br = b[idx:]
-            b = b[:idx - 1]
+            b = b[:idx]
             break
     ret = 0
     if len(a) > 0 and len(b) > 0:
@@ -47,13 +47,14 @@ def _num_comp(a, b):
     for idx, chr in enumerate(a):
         if not chr.isdigit():
             ar = a[idx:]
-            a = a[:idx - 1]
+            a = a[:idx]
             break
     for idx, chr in enumerate(b):
         if not chr.isdigit():
             br = b[idx:]
-            b = b[:idx - 1]
+            b = b[:idx]
             break
+    ret = 0
     ai = 0 if len(a) == 0 else int(a)
     bi = 0 if len(b) == 0 else int(b)
     if ai < bi:

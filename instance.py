@@ -1,18 +1,18 @@
 import logging
 from pathlib import Path
 
-import settings
+import config
 
 
 def add(args):
-    gs = settings.GlobalSettings()
+    gs = config.Settings()
     gs.instances.append({"name": args.name,
                          "path": str(Path(args.path).expanduser())})
     gs.save()
 
 
 def rm(args):
-    gs = settings.GlobalSettings()
+    gs = config.Settings()
     if args.name in [instance["name"] for instance in gs.instances]:
         gs.instances = [instance for instance in gs.instances if instance["name"] != args.name]
         logging.info(gs.instances)
@@ -22,13 +22,13 @@ def rm(args):
 
 
 def list_ksp(_):
-    gs = settings.GlobalSettings()
+    gs = config.Settings()
     for instance in gs.instances:
         print(instance)
 
 
 def use(args):
-    gs = settings.GlobalSettings()
+    gs = config.Settings()
     if args.name in [instance["name"] for instance in gs.instances]:
         gs.current_instance = args.name
         gs.save()

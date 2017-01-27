@@ -2,22 +2,22 @@ import json
 import logging
 import re
 import tarfile
-from urllib.parse import quote_plus
 
 import requests
 
+from .utils import get_filename
 from .version import version_comp
 
 
 def fetch_latest_repo(instance, name):
-    f = (instance.get_repos_path(name) / quote_plus(instance.repos[name])).open("wb")
+    f = (instance.get_repos_path(name) / get_filename(instance.repos[name])).open("wb")
     f.write(requests.get(instance.repos[name]).content)
     f.close()
 
 
 def parse_metadata(instance, repo_name):
-    repo = instance.repos[repo_name]
-    file_path = str(instance.get_repos_path(repo_name) / quote_plus(repo))
+    repo_uri = instance.repos[repo_name]
+    file_path = str(instance.get_repos_path(repo_name) / get_filename(repo_uri))
     try:
         tf = tarfile.open(file_path)
     except IOError:
@@ -28,9 +28,6 @@ def parse_metadata(instance, repo_name):
         if member.isreg() and member.name.endswith(".ckan"):
             package = json.loads(tf.extractfile(member).read().decode("utf-8"))
             packages.append(package)
-    # packages_merged={package_id:[] for package_id in set([package["identifier"] for package in packages])}
-    # for package in packages:
-    #     packages_merged[package["identifier"]].append(package)
     f = open(str(instance.get_repos_path(repo_name) / "cache.json"), "w")
     f.write(json.dumps(packages, indent=4))
     f.close()
@@ -49,6 +46,12 @@ class Package:
     def __getattr__(self, item):
         if item in ["abstract"]:
             return max(self.builds, key=lambda x: CKANVersion(x["version"]))[item]
+
+    def __repr__(self):
+        return str((self.id, self.name))
+
+    def get_latest_build(self):
+        return max(self.builds, key=lambda x: CKANVersion(x["version"]))
 
 
 class CKANVersion:
@@ -76,7 +79,7 @@ class CKANVersion:
         return False
 
     def __eq__(self, other):
-        if self.epoch == other.epoch and self.version == other.version:
+        if self.epoch == other.epoch and version_comp(self.version, other.version) == 0:
             return True
         return False
 

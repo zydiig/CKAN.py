@@ -1,3 +1,4 @@
+import logging
 import re
 from pathlib import Path
 
@@ -28,17 +29,20 @@ def find_by_regexp(path, regexp):
     return None
 
 
-def gen_file_list(path, filters):
-    if type(path) is str:
-        path = Path(path)
-    files = []
+def gen_file_list(path: Path, filters=None, toplevel=True):
+    filters = filters or []
+    files = [] if toplevel else [path]
     for child in path.iterdir():
-        if child.is_dir() and all([filter_.check(child) for filter_ in filters]):
-            files.append(gen_file_list(child, filters))
-        files.append(child)
+        if all([filter_.check(child) for filter_ in filters]):
+            if child.is_dir():
+                files += gen_file_list(child, filters, toplevel=False)
+            else:
+                files.append(child)
+    files = [file.relative_to(path) for file in files] if toplevel else files
     for file in files:
         if not all([filter_.check(file) for filter_ in filters]):
             files.remove(file)
+            logging.info("Filtered:{}".format(file))
     return files
 
 

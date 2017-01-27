@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
+from uuid import uuid4
 
 
-class Settings:
+class JSONConfig:
     def __init__(self, path: Path):
         self._path = path
         self._obj = json.load(self._path.open())
@@ -17,14 +18,13 @@ class Settings:
             self.__dict__["_obj"][name] = value
 
     def save(self):
-        print(self.__dict__)
         f = self._path.open("w")
         f.write(json.dumps(self._obj, indent=4))
         f.close()
         print("Saved to {}".format(self._path))
 
 
-class Instance(Settings):
+class Instance(JSONConfig):
     def __init__(self, kspdir: str):
         self.kspdir = kspdir
         super().__init__(self._get_path(kspdir))
@@ -36,33 +36,38 @@ class Instance(Settings):
         self.kspdir = kspdir
         self.path = self._get_path(kspdir)
         self._obj = {
-            "repos": [
-                {"name": "default",
-                 "uri": "https://github.com/KSP-CKAN/CKAN-meta/archive/master.tar.gz"
-                 }
-            ]
+            "repos": {
+                str(uuid4()): {"name": "default",
+                               "uri": "https://github.com/KSP-CKAN/CKAN-meta/archive/master.tar.gz"
+                               }
+            }
         }
         self.save()
+
+    def fetch_repos(self, ):
+        pass
 
     @staticmethod
     def _get_path(kspdir) -> Path:
         return Path(kspdir) / "CKAN.py" / "settings.json"
 
 
-class GlobalSettings(Settings):
+class Settings(JSONConfig):
     def __init__(self):
         super().__init__((Path("~") / ".ckanpy.cfg").expanduser())
 
-    def create(self, kspdir: str):
-        self._obj = {
-            "instances": [{"name": "Default", "path": kspdir}],
-            "current_instance": "Default"
+    @staticmethod
+    def create(kspdir: str):
+        default_uuid = str(uuid4())
+        obj = {
+            "instances": {default_uuid: {"name": "Default", "path": kspdir}},
+            "current_instance": default_uuid
         }
-        self.save()
+        f = (Path("~") / ".ckanpy.cfg").expanduser().open("w")
+        f.write(json.dumps(obj, indent=4))
+        f.close()
 
 
 def get_current_instance():
-    gs = GlobalSettings()
-    for instance in gs.instances:
-        if instance["name"] == gs.current_instance:
-            return Instance(instance["path"])
+    gs = Settings()
+    return next(Instance(instance["path"]) for instance in gs.instances if instance["name"] == gs.current_instance)

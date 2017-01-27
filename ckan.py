@@ -1,10 +1,13 @@
 import argparse
 import logging
+import sys
+from pathlib import Path
 
+import install
 import instance
 import search
+from config import get_current_instance, Instance, Settings
 from libckan import repo
-from settings import get_current_instance, Instance
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
@@ -34,12 +37,23 @@ search_parser.add_argument("--kspver", help="Search for mods compatible with a s
 search_parser.set_defaults(func=search.entry)
 
 install_parser = subparsers.add_parser('install', help='Install mods.')
-install_parser.add_argument("name", help="Names of mods to install.", nargs="+")
-install_parser.add_argument("--dry-run", help="Simulate installation process.", nargs="?", action="store_true",
-                            dest="dry_run")
+install_parser.add_argument("id", help="Identifiers of mods to install.", nargs="+")
+install_parser.add_argument("--dry-run", help="Simulate installation process.", action="store_true", dest="dry_run",
+                            default=True)
+install_parser.set_defaults(func=install.entry)
 
 if __name__ == "__main__":
     args = parser.parse_args()
+    if not (Path("~") / ".ckanpy.cfg").expanduser().exists():
+        print("This is the first time you've run CKAN.py.")
+        print("Please create a new KSP instance.")
+        path = input("Path to KSP directory: ")
+        if Path(path).exists():
+            Settings.create(path)
+        else:
+            logging.error("Path is not a directory.Exiting.")
+            sys.exit(1)
+
     if not args.kspdir:
         args.instance = get_current_instance()
     else:
