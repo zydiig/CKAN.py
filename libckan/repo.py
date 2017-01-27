@@ -1,34 +1,34 @@
 import logging
+from uuid import uuid4
 
-from libckan import cache
 
-
-def fetch_latest(instance, args):
-    repos = instance.repos
-    if not args.repo_name:
-        for repo in repos.items():
-            cache.fetch_latest_repo(instance, repo)
+def fetch_latest(args):
+    if not args.name:
+        repos = args.instance.repos
+        for uuid, repo in repos.items():
+            args.instance.fetch_repo(uuid, repo["uri"])
     else:
-        cache.fetch_latest_repo(instance, args.name)
+        args.instance.fetch_repo_by_name(args.name)
 
 
-def add(instance, args):
-    instance.repos[args.name] = args.uri
-    instance.save()
+def add(args):
+    uuid = str(uuid4())
+    args.instance.repos[uuid] = args.uri
+    args.instance.save()
     if not args.add_only:
-        cache.fetch_latest_repo(instance, args.name)
-        cache.parse_metadata(instance, args.name)
+        args.instance.fetch_repo(uuid)
+        args.instance.parse_metadata(uuid)
 
 
-def list_repo(instance, _):
-    for repo in instance.repos:
+def list_repo(args):
+    for repo in args.instance.repos:
         print(repo)
 
 
-def rm(instance, args):
-    if args.name in instance.repos:
-        del instance.repos[args.name]
-        instance.save()
+def rm(args):
+    if args.name in args.instance.repos:
+        del args.instance.repos[args.name]
+        args.instance.save()
     else:
         logging.error("Repository {} not found.".format(args.name))
 

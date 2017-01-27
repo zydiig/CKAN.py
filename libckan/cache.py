@@ -1,37 +1,7 @@
 import json
-import logging
 import re
-import tarfile
 
-import requests
-
-from .utils import get_filename
 from .version import version_comp
-
-
-def fetch_latest_repo(instance, name):
-    f = (instance.get_repos_path(name) / get_filename(instance.repos[name])).open("wb")
-    f.write(requests.get(instance.repos[name]).content)
-    f.close()
-
-
-def parse_metadata(instance, repo_name):
-    repo_uri = instance.repos[repo_name]
-    file_path = str(instance.get_repos_path(repo_name) / get_filename(repo_uri))
-    try:
-        tf = tarfile.open(file_path)
-    except IOError:
-        logging.error("File {} not found.".format(file_path))
-        return
-    packages = []
-    for member in tf.getmembers():
-        if member.isreg() and member.name.endswith(".ckan"):
-            package = json.loads(tf.extractfile(member).read().decode("utf-8"))
-            packages.append(package)
-    f = open(str(instance.get_repos_path(repo_name) / "cache.json"), "w")
-    f.write(json.dumps(packages, indent=4))
-    f.close()
-    logging.info("Successfully parsed {} ckan files.".format(str(len(packages))))
 
 
 class Package:
@@ -91,18 +61,22 @@ class CKANVersion:
 
 
 class CKANCache:
-    def __init__(self, instance, repo_name, rebuild=False):
+    def __init__(self, instance, repo_uuid, rebuild=False):
         self.instance = instance
-        self.name = repo_name
-        self.path = self.instance.get_repos_path(repo_name) / "cache.json"
-        f = self.path.open()
-        if rebuild:
-            parse_metadata(self.instance, repo_name)
+        self.uuid = repo_uuid
+        self.path = self.instance.get_repo_path(repo_uuid) / "cache.json"
+        if not self.path.exists() or rebuild:
+            if not self.path.parent.exists():
+                self.path.parent.mkdir(parents=True)
+            with self.path.open("w") as f:
+                self.packages = self.instance.parse_metadata(repo_uuid)
+                f.write(json.dumps(self.packages, indent=4))
         else:
-            self.entries = json.load(f)
+            with self.path.open("r") as f:
+                self.packages = json.load(f)
 
     def search(self, cond):
-        filtered = list(filter(cond, self.entries))
+        filtered = list(filter(cond, self.packages))
         merged = {pid: [] for pid in [package["identifier"] for package in filtered]}
         for package in filtered:
             merged[package["identifier"]].append(package)

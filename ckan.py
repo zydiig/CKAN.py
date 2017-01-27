@@ -54,9 +54,6 @@ if __name__ == "__main__":
             logging.error("Path is not a directory.Exiting.")
             sys.exit(1)
 
-    if not args.kspdir:
-        args.instance = get_current_instance()
-    else:
-        args.instance = Instance(args.kspdir)
+    args.instance = Instance(args.kspdir) if args.kspdir else get_current_instance()
     logging.info(args)
     args.func(args)

@@ -44,7 +44,6 @@ class SafetyException(Exception):
 
 def extract(path: Path, dest):  # Will there be files other than .zip's?
     logging.info(("Extracting to ", dest))
-    return
     if not path.exists():
         path.mkdir(parents=True)
     f = zipfile.ZipFile(str(path))
