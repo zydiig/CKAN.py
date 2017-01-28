@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from pkg_resources import parse_version
 
 from libckan.cache import CKANCache
@@ -21,6 +23,10 @@ def entry(args):
             print("")
             print("Identifier:  ", package.id)
             print("Name:        ", package.name)
+            print("Author:      ", package.author)
             print("Description: ", package.abstract)
-            print("Version:     ", package.get_versions())
+            print("License:     ", package.license)
+            print("Versions:    ", package.get_all_versions())
+            print("Resources:   ")
+            pprint(package.resources)
             print("")

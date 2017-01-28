@@ -63,16 +63,17 @@ class Instance(JSONConfig):
         f.close()
 
     def fetch_repo(self, uuid, url=None):
+        url = url if url else self.repos[uuid]["uri"]
         with (self.get_repo_path(uuid) / uuid).open("wb") as f:
-            if url:
-                f.write(requests.get(url).content)
-            else:
-                f.write(requests.get(self.repos[uuid]["uri"]).content)
+            f.write(requests.get(url).content)
         self.parse_metadata(uuid)
 
     def fetch_repo_by_name(self, name):
-        uuid, repo = next(p for p in self.repos.items() if p[1]["name"] == name)
-        self.fetch_repo(uuid)
+        try:
+            uuid, repo = next(p for p in self.repos.items() if p[1]["name"] == name)
+            self.fetch_repo(uuid)
+        except StopIteration:
+            raise Exception("Repository {} not found.".format(name))
 
     def parse_metadata(self, repo_uuid):
         repo_uri = self.repos[repo_uuid]
@@ -93,6 +94,9 @@ class Instance(JSONConfig):
         logging.info("Successfully parsed {} ckan files.".format(str(len(packages))))
         return packages
 
+    def __repr__(self):
+        return "Instance('{}')".format(self.kspdir)
+
 
 class Settings(JSONConfig):
     def __init__(self):
@@ -107,6 +111,13 @@ class Settings(JSONConfig):
         }
         with (Path("~") / ".ckanpy.cfg").expanduser().open("w") as f:
             f.write(json.dumps(obj, indent=4))
+
+    def get_instance_by_name(self, name):
+        try:
+            return Instance(
+                next(instance for uuid, instance in self.instances.items() if instance["name"] == name)["path"])
+        except StopIteration:
+            raise Exception("Instance lookup failed.")
 
 
 def get_current_instance():

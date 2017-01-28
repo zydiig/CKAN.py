@@ -4,24 +4,25 @@ import re
 from .version import version_comp
 
 
-class Package:
+class CKANPackage:
     def __init__(self, id, name, builds):
         self.id = id
         self.name = name
         self.builds = builds
 
-    def get_versions(self):
+    def get_all_versions(self):
         return sorted([CKANVersion(build["version"]) for build in self.builds], reverse=True)
 
     def __getattr__(self, item):
-        if item in ["abstract"]:
-            return max(self.builds, key=lambda x: CKANVersion(x["version"]))[item]
+        if item in ["abstract", "license", "author", "ksp_version", "ksp_version_min", "ksp_version_max",
+                    "ksp_version_strict", "resources"]:
+            return self.get_build()[item]
 
     def __repr__(self):
         return str((self.id, self.name))
 
-    def get_latest_build(self):
-        return max(self.builds, key=lambda x: CKANVersion(x["version"]))
+    def get_build(self, cond=None):
+        return max(list(filter(cond, self.builds)), key=lambda x: CKANVersion(x["version"]))
 
 
 class CKANVersion:
@@ -37,16 +38,18 @@ class CKANVersion:
     def __lt__(self, other):
         if self.epoch < other.epoch:
             return True
-        if version_comp(self.version, other.version) == -1:
+        elif self.epoch == other.epoch and version_comp(self.version, other.version) == -1:
             return True
-        return False
+        else:
+            return False
 
     def __gt__(self, other):
         if self.epoch > other.epoch:
             return True
-        if version_comp(self.version, other.version) == 1:
+        elif self.epoch == other.epoch and version_comp(self.version, other.version) == 1:
             return True
-        return False
+        else:
+            return False
 
     def __eq__(self, other):
         if self.epoch == other.epoch and version_comp(self.version, other.version) == 0:
@@ -61,15 +64,15 @@ class CKANVersion:
 
 
 class CKANCache:
-    def __init__(self, instance, repo_uuid, rebuild=False):
+    def __init__(self, instance, uuid, rebuild=False):
         self.instance = instance
-        self.uuid = repo_uuid
-        self.path = self.instance.get_repo_path(repo_uuid) / "cache.json"
+        self.uuid = uuid
+        self.path = self.instance.get_repo_path(uuid) / "cache.json"
         if not self.path.exists() or rebuild:
             if not self.path.parent.exists():
                 self.path.parent.mkdir(parents=True)
             with self.path.open("w") as f:
-                self.packages = self.instance.parse_metadata(repo_uuid)
+                self.packages = self.instance.parse_metadata(uuid)
                 f.write(json.dumps(self.packages, indent=4))
         else:
             with self.path.open("r") as f:
@@ -83,5 +86,14 @@ class CKANCache:
         packages = []
         for item in merged.items():
             packages.append(
-                Package(item[0], max(item[1], key=lambda build: CKANVersion(build["version"]))["name"], item[1]))
+                CKANPackage(item[0], max(item[1], key=lambda build: CKANVersion(build["version"]))["name"],
+                            item[1]))  # Use the name of the newest CKAN package as the canonical Name
         return packages
+
+
+class CKANAtom:
+    def __init__(self, *kargs):
+        if len(kargs) == 1:  # from a atom string
+            pass
+        elif len(kargs) == 3:  # from parts
+            pass

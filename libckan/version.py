@@ -1,4 +1,7 @@
 # Inspired by https://github.com/KSP-CKAN/CKAN/blob/master/Core/Types/Version.cs#L76
+# A delicate process
+
+
 def _str_comp(a, b):
     ar = ""
     br = ""

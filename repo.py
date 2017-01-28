@@ -21,8 +21,12 @@ def add(args):
 
 
 def list_repo(args):
-    for repo in args.instance.repos:
-        print(repo)
+    for uuid, repo in args.instance.repos.items():
+        print()
+        print("UUID: ", uuid)
+        print("Name: ", repo["name"])
+        print("URI:  ", repo["uri"])
+        print()
 
 
 def rm(args):
@@ -42,5 +46,4 @@ actions = {
 
 
 def entry(args):
-    logging.info(args)
-    actions[args.action](args.instance, args)
+    actions[args.action](args)
