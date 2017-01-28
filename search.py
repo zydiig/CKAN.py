@@ -3,6 +3,7 @@ from pprint import pprint
 from pkg_resources import parse_version
 
 from libckan.cache import CKANCache
+from libckan.version import CKANAtom
 
 
 def entry(args):
@@ -30,3 +31,11 @@ def entry(args):
             print("Resources:   ")
             pprint(package.resources)
             print("")
+
+
+def resolve(args):
+    atom = CKANAtom(args.atom)
+    results = []
+    for cache in [CKANCache(args.instance, name) for name, uri in args.instance.repos.items()]:
+        results.append(atom.find_build(cache))
+    pprint(results)

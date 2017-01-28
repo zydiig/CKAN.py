@@ -28,7 +28,7 @@ repo_parser.set_defaults(func=repo.entry)
 instance_parser = subparsers.add_parser('instance', help='Instance management', aliases=['ksp'])
 instance_parser.add_argument("action", choices=instance.actions.keys())
 instance_parser.add_argument("name", help="Name of the instance", nargs="?")
-instance_parser.add_argument("uri", help="Directory the instance is in", nargs="?")
+instance_parser.add_argument("path", help="Directory the instance is in", nargs="?")
 instance_parser.set_defaults(func=instance.entry)
 
 search_parser = subparsers.add_parser('search', help='Search for mods')
@@ -38,16 +38,20 @@ search_parser.add_argument("--kspver", help="Search for mods compatible with a s
 search_parser.set_defaults(func=search.entry)
 
 install_parser = subparsers.add_parser('install', help='Install mods')
-install_parser.add_argument("id", help="Identifiers of mods to install.", nargs="+")
-install_parser.add_argument("--dry-run", help="Simulate installation process.", action="store_true", dest="dry_run",
+install_parser.add_argument("id", help="Identifiers of mods to install", nargs="+")
+install_parser.add_argument("--dry-run", help="Simulate installation process", action="store_true", dest="dry_run",
                             default=False)
 install_parser.set_defaults(func=install.install)
 
-remove_parser = subparsers.add_parser('install', help='Remove mods')
-remove_parser.add_argument("id", help="Identifiers of mods to remove.", nargs="+")
-remove_parser.add_argument("--dry-run", help="Simulate removal process.", action="store_true", dest="dry_run",
+remove_parser = subparsers.add_parser('remove', help='Remove mods')
+remove_parser.add_argument("id", help="Identifiers of mods to remove", nargs="+")
+remove_parser.add_argument("--dry-run", help="Simulate removal process", action="store_true", dest="dry_run",
                            default=False)
 remove_parser.set_defaults(func=install.remove)
+
+remove_parser = subparsers.add_parser('resolve', help='Resolve a atom')
+remove_parser.add_argument("atom", help="Atom to resolve")
+remove_parser.set_defaults(func=search.resolve)
 
 if __name__ == "__main__":
     args = parser.parse_args()

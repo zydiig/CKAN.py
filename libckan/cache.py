@@ -1,7 +1,6 @@
 import json
-import re
 
-from .version import version_comp
+from libckan.version import CKANVersion
 
 
 class CKANPackage:
@@ -14,53 +13,13 @@ class CKANPackage:
         return sorted([CKANVersion(build["version"]) for build in self.builds], reverse=True)
 
     def __getattr__(self, item):
-        if item in ["abstract", "license", "author", "ksp_version", "ksp_version_min", "ksp_version_max",
-                    "ksp_version_strict", "resources"]:
-            return self.get_build()[item]
+        return self.get_build()[item]
 
     def __repr__(self):
         return str((self.id, self.name))
 
     def get_build(self, cond=None):
         return max(list(filter(cond, self.builds)), key=lambda x: CKANVersion(x["version"]))
-
-
-class CKANVersion:
-    def __init__(self, version_string):
-        self.version_string = version_string
-        match = re.match(r"((\d+):)?(.+)", version_string)
-        if not match.group(2):
-            self.epoch = 0
-        else:
-            self.epoch = int(match.group(2))
-        self.version = match.group(3)
-
-    def __lt__(self, other):
-        if self.epoch < other.epoch:
-            return True
-        elif self.epoch == other.epoch and version_comp(self.version, other.version) == -1:
-            return True
-        else:
-            return False
-
-    def __gt__(self, other):
-        if self.epoch > other.epoch:
-            return True
-        elif self.epoch == other.epoch and version_comp(self.version, other.version) == 1:
-            return True
-        else:
-            return False
-
-    def __eq__(self, other):
-        if self.epoch == other.epoch and version_comp(self.version, other.version) == 0:
-            return True
-        return False
-
-    def __str__(self):
-        return self.version_string
-
-    def __repr__(self):
-        return self.version_string
 
 
 class CKANCache:
@@ -89,11 +48,3 @@ class CKANCache:
                 CKANPackage(item[0], max(item[1], key=lambda build: CKANVersion(build["version"]))["name"],
                             item[1]))  # Use the name of the newest CKAN package as the canonical Name
         return packages
-
-
-class CKANAtom:
-    def __init__(self, *kargs):
-        if len(kargs) == 1:  # from a atom string
-            pass
-        elif len(kargs) == 3:  # from parts
-            pass

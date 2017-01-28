@@ -48,8 +48,8 @@ def gen_file_list(path: Path, filters=None, toplevel=True):
 
 def is_relative_to(this, that):
     try:
-        ret = this.relative_to(that)
+        this.relative_to(that)
     except ValueError:
         return False
-    if ret:
+    else:
         return True

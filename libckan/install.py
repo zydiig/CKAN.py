@@ -11,13 +11,14 @@ from .utils import get_filename, get_sha1, get_sha256
 
 
 def check_digests(fpath, digests):
-    if len(digests.keys()) != 2:
-        raise Exception("Digests incomplete.")
     data = fpath.open("rb").read()
-    if get_sha1(data) == digests["sha1"] and get_sha256(data) == digests["sha256"]:
-        return True
-    else:
-        return False
+    ret_sha1 = True
+    ret_sha256 = True
+    if "sha1" in digests:
+        ret_sha1 = get_sha1(data) == digests["sha1"]
+    if "sha256" in digests:
+        ret_sha256 = get_sha256(data) == digests["sha256"]
+    return ret_sha1 and ret_sha256
 
 
 def download_to(url, dir, name, digests=None):
@@ -50,7 +51,7 @@ def extract(path: Path, dest):  # Will there be files other than .zip's?
     f.extractall(path=dest)
 
 
-def install(path, directives, instance, dry_run=False):
+def install(path, directives, instance, dry_run=False, overwrite=False):
     tmpdir = Path("/tmp/CKAN.py/") / path.stem
     extract(path, str(tmpdir))
     filters = []
@@ -64,10 +65,17 @@ def install(path, directives, instance, dry_run=False):
             src = tmpdir / find_by_regexp(tmpdir, directive["find_regexp"])
         else:
             raise Exception("Unrecognized directive type(source).")
-        dest = instance.kspdir if directive["install_to"] == "GameRoot" else Path(instance.kspdir) / directive[
+        if "optional" in directive and directive["optional"]:
+            opt = input('The install item "{}" is optional.Would you like to install it? (Y/n) '.format(src))
+            if not opt in ["yes", "Yes", "y", "Y"]:
+                print("Declined: {}".format(src))
+                continue
+            else:
+                print("Accepted: {}".format(src))
+        dest = instance.kspdir if directive["install_to"] == "GameRoot" else instance.kspdir / directive[
             "install_to"]
         dest /= src.name
-        if not is_relative_to(dest, Path(instance.kspdir)) or not dest.parent.is_dir():
+        if not is_relative_to(dest, instance.kspdir) or not dest.parent.is_dir():
             raise SafetyException("Attempting to write to {}".format(dest))
         if not directive["install_to"] in ["GameData", "Ships", "Ships/SPH", "Ships/VAB", "Ships/@thumbs/VAB",
                                            "Ships/@thumbs/SPH", "Tutorial", "Scenarios",
@@ -86,7 +94,10 @@ def install(path, directives, instance, dry_run=False):
             else:
                 filters.append(Filter(Filter.REGEXP, directive["filter_regexp"]))
         # TODO : find_matches_files (Spec v1.16)
+        records = []
         for file in gen_file_list(src, filters=filters):
+            if (dest / file).is_file() and (dest / file).exists():
+                raise Exception("File existed: {}".format(str(dest / file)))
             if (src / file).is_dir() and not (dest / file).exists():
                 if not dry_run:
                     (dest / file).mkdir(parents=True)
@@ -94,7 +105,9 @@ def install(path, directives, instance, dry_run=False):
             elif (src / file).is_file():
                 if not dry_run:
                     shutil.copy(str(src / file), str(dest / file))
+                    records.append((dest / file).relative_to(instance.kspdir))
                 print("{src} -> {dest}".format(src=src, dest=dest))
+
 
 
 def install_package(instance, build, dry_run):
@@ -104,9 +117,5 @@ def install_package(instance, build, dry_run):
     install(path, build["install"], instance, dry_run)
 
 
-def dep_solve(pkgs):
-    pass
-
-
-if __name__ == '__main__':
+def dep_resolve(instance, atoms):
     pass

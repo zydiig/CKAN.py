@@ -30,7 +30,7 @@ class JSONConfig:
 
 class Instance(JSONConfig):
     def __init__(self, kspdir: str):
-        self.kspdir = kspdir
+        self.kspdir = Path(kspdir)
         if not self._get_path(kspdir).exists():
             self.create(kspdir)
             super().__init__(self._get_path(kspdir))
@@ -39,14 +39,16 @@ class Instance(JSONConfig):
             super().__init__(self._get_path(kspdir))
 
     def get_repo_path(self, uuid) -> Path:
-        path = Path(self.kspdir) / "CKAN.py/repos" / uuid
+        path = self.kspdir / "CKAN.py/repos" / uuid
         if not path.exists():
             path.mkdir(parents=True)
         return path
 
     @staticmethod
     def _get_path(kspdir) -> Path:
-        return Path(kspdir) / "CKAN.py/settings.json"
+        if type(kspdir) is str:
+            kspdir = Path(kspdir)
+        return kspdir / "CKAN.py/settings.json"
 
     @staticmethod
     def create(kspdir: str):
@@ -94,8 +96,11 @@ class Instance(JSONConfig):
         logging.info("Successfully parsed {} ckan files.".format(str(len(packages))))
         return packages
 
+    def add_package_record(self, identifier, version):
+        self.kspdir
+
     def __repr__(self):
-        return "Instance('{}')".format(self.kspdir)
+        return "Instance('{}')".format(str(self.kspdir))
 
 
 class Settings(JSONConfig):
